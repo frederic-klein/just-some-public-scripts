@@ -10,7 +10,7 @@ from pm4py.objects.log.util import dataframe_utils
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 from pm4py.algo.discovery.heuristics import algorithm as heuristic_miner
 from pm4py.visualization.petri_net import visualizer as pn_visualizer
-from enum import StrEnum
+from strenum import StrEnum
 
 class WriteModes(StrEnum):
     APPEND = 'a'
@@ -18,19 +18,13 @@ class WriteModes(StrEnum):
 
 
 def dataframe_from_qwiki_log(log_dir=None):
-    start_time = time.time()
-
     matching_lines = []
     for f in glob.iglob(log_dir+'events.*'):
         for line in open(f).readlines():
             if 'event:' in line:
                 matching_lines.append(re.split('(?: info)?\s*\|\s*', line)[1:4:])
-    new_df = pd.DataFrame(matching_lines, columns=['time:timestamp', 'user', 'event'])
-    print(new_df)
-    print(time.time()-start_time)
-    print('dataframe_from_qwiki_log')
+    return pd.DataFrame(matching_lines, columns=['time:timestamp', 'user', 'event'])
 
-    return new_df
 
 def process_dataframe(fulldataframe=None, app=None):
     """
@@ -52,19 +46,20 @@ def process_dataframe(fulldataframe=None, app=None):
     task_dataframe = task_dataframe[task_dataframe['event'].str.contains(
         'event:TASKCHANGE.*:'+app, regex=True)]
 
-    task_dataframe[['task_id', 'case:concept:name', 'state', 'name']] = task_dataframe['event'].str.split(
-        ";", expand=True,).drop([0, 2, 4, 7, 8], axis=1)
+    if not task_dataframe.empty:
+        task_dataframe[['task_id', 'case:concept:name', 'state', 'name']] = task_dataframe['event'].str.split(
+            ";", expand=True,).drop([0, 2, 4, 7], axis=1)
 
-    task_dataframe['name'] = task_dataframe['name'].str.split(":", expand=True).drop([0], axis=1)
-    task_dataframe['state'] = task_dataframe['state'].str.split(":", expand=True).drop([0], axis=1)
-    task_dataframe['case:concept:name'] = task_dataframe['case:concept:name'].str.split(":", expand=True).drop([0], axis=1)
+        task_dataframe['name'] = task_dataframe['name'].str.split(":", expand=True).drop([0], axis=1)
+        task_dataframe['state'] = task_dataframe['state'].str.split(":", expand=True).drop([0], axis=1)
+        task_dataframe['case:concept:name'] = task_dataframe['case:concept:name'].str.split(":", expand=True).drop([0], axis=1)
 
-    task_dataframe['concept:activity'] = task_dataframe[['name', 'state']].agg(' - '.join, axis=1)
-    task_dataframe['concept:name'] = task_dataframe[['name', 'state']].agg(' - '.join, axis=1)
-    task_dataframe['currentstate:name'] = task_dataframe[['name', 'state']].agg(' - '.join, axis=1)
+        task_dataframe['concept:activity'] = task_dataframe[['name', 'state']].agg(' - '.join, axis=1)
+        task_dataframe['concept:name'] = task_dataframe[['name', 'state']].agg(' - '.join, axis=1)
+        task_dataframe['currentstate:name'] = task_dataframe[['name', 'state']].agg(' - '.join, axis=1)
 
-    task_dataframe = task_dataframe.drop(columns=['name', 'state', 'task_id'])
-    task_dataframe = task_dataframe[['time:timestamp', 'user', 'concept:activity', 'concept:name', 'currentstate:name', 'case:concept:name', 'event' ]]
+        task_dataframe = task_dataframe.drop(columns=['name', 'state', 'task_id'])
+        task_dataframe = task_dataframe[['time:timestamp', 'user', 'concept:activity', 'concept:name', 'currentstate:name', 'case:concept:name', 'event' ]]
 
     dataframe[transition_columns] = dataframe['event'].str.split(
         ";", expand=True,).drop([0, 4, 6], axis=1)
@@ -73,38 +68,14 @@ def process_dataframe(fulldataframe=None, app=None):
             ":", expand=True,).drop([0], axis=1)
 
     dataframe = dataframe[['time:timestamp', 'user', 'concept:activity', 'concept:name', 'currentstate:name', 'case:concept:name', 'event' ]]
+    dataframe['concept:name'] = dataframe[['concept:activity', 'concept:name']].agg(': '.join, axis=1)
+    dataframe['concept:activity'] = dataframe[['concept:activity', 'concept:name']].agg(': '.join, axis=1)
+
     dataframe = pd.concat([dataframe, task_dataframe], ignore_index=True)
 
     return dataframe_utils.convert_timestamp_columns_in_df(
         dataframe, timest_columns='time:timestamp').sort_values(by='time:timestamp')
 
-
-# def format_dataframe(fulldataframe=None, app=None):
-#     """
-#     Filter for app events in Q.wiki log files
-#     Note: event:TASKCHANGE currently ignored
-#     """
-#     dataframe = fulldataframe.copy()
-
-#     transition_columns = ['concept:activity', 'concept:name',
-#                           'currentstate:name', 'case:concept:name']
-
-#     dataframe = dataframe[dataframe['event'].str.contains(
-#         'event:TRANSITION.*:'+app, regex=True)]
-
-#     if dataframe.empty:
-#         return dataframe
-
-#     dataframe[transition_columns] = dataframe['event'].str.split(
-#         ";", expand=True,).drop([0, 4, 6], axis=1)
-#     dataframe = dataframe.drop(columns=['event'])
-#     for col in transition_columns:
-#         dataframe[[col]] = dataframe[col].str.split(
-#             ":", expand=True,).drop([0], axis=1)
-#     print(time.time()-start_time)
-
-#     return dataframe_utils.convert_timestamp_columns_in_df(
-#         dataframe, timest_columns='time:timestamp').sort_values(by='time:timestamp')
 
 def filter_dataframe(app_eventlog=None, type='TRANSITION'):
     """
@@ -119,7 +90,6 @@ def filter_dataframe(app_eventlog=None, type='TRANSITION'):
 
 def petri_by_miner(miner_type=None, dataframe=None):
     if(miner_type == 'inductive'):
-        # return inductive_miner.apply(dataframe)
         return inductive_miner.apply(dataframe, variant=inductive_miner.Variants.IMf, parameters={
             inductive_miner.Variants.IMf.value.Parameters.NOISE_THRESHOLD: 1.0})
     elif miner_type == 'heuristic':
@@ -200,7 +170,7 @@ def process_app(app=None, fulldataframe=None, abs_output_path=None):
     write_to_file(abs_output_path, ['%ENDTABPANE%', '%ENDTAB%'])
 
 
-def write_to_file(mode=WriteModes.APPEND, abs_file_path=None, lines=None):
+def write_to_file(abs_file_path=None, lines=None, mode=WriteModes.APPEND):
     f = open(file=abs_file_path, mode=mode, encoding="utf-8")
     for line in lines:
         f.write(line)
@@ -213,10 +183,10 @@ def main():
     parser.add_argument(
         "-i", "--Input", help="Absolute path to q.wiki eventlog folder, e.g. /fullpath/working/logs/")
     parser.add_argument(
-        "-a", "--App", help="App Name, e.g. SomeappWFG", action='append', nargs='*')
+        "-a", "--App", help="App Name, e.g. SomeappWFG or UnitARKCqGi/AbwesenheitenWFG für local MS Apps", action='append', nargs='*')
     args = parser.parse_args()
 
-    write_to_file(WriteModes.REPLACE, args.Output, [''])
+    write_to_file(args.Output, [''], WriteModes.REPLACE)
 
     start_time = time.time()
 
