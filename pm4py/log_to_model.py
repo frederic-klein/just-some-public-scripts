@@ -138,6 +138,18 @@ def process_app(app=None, fulldataframe=None, abs_output_path=None):
         '%ENDTAB%',
         ])
 
+    write_to_file(abs_output_path, [
+        '%TAB{"Recommendations"}%',
+        '%INCLUDE{"PmDashboardRecommendations" disablerewriteurls="on"}%',
+        '%ENDTAB%',
+    ])
+
+    write_to_file(abs_output_path, [
+        '%TAB{"Workflow"}%',
+        '<img src="/pub/Main/PmDashboard/WorkflowAppOverview.png"></img>',
+        '%ENDTAB%',
+    ])
+
     variants = {'frequency': pn_visualizer.Variants.FREQUENCY,
                 'simple': pn_visualizer.Variants.WO_DECORATION}
 
