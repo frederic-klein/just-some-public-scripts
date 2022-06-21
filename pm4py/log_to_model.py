@@ -7,9 +7,13 @@ import time
 import re
 import pandas as pd
 from pm4py.objects.log.util import dataframe_utils
+from pm4py.util import constants
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 from pm4py.algo.discovery.heuristics import algorithm as heuristic_miner
 from pm4py.visualization.petri_net import visualizer as pn_visualizer
+from pm4py.algo.organizational_mining.sna import algorithm as sna
+from pm4py.visualization.sna import visualizer as sna_visualizer
+
 from strenum import StrEnum
 
 class WriteModes(StrEnum):
@@ -150,6 +154,14 @@ def process_app(app=None, fulldataframe=None, abs_output_path=None):
         '%ENDTAB%',
     ])
 
+    write_to_file(abs_output_path, [
+        '%TAB{"Handover of Work"}%',
+        '<div style="height:3600px;">',
+        '%INCLUDE{"%ATTACHURL%/data.txt.sn.txt" raw="on" literal="on" encode="none"}%',
+        '</div>',
+        '%ENDTAB%',
+    ])
+
     variants = {'frequency': pn_visualizer.Variants.FREQUENCY,
                 'simple': pn_visualizer.Variants.WO_DECORATION}
 
@@ -181,6 +193,17 @@ def process_app(app=None, fulldataframe=None, abs_output_path=None):
 
     write_to_file(abs_output_path, ['%ENDTABPANE%', '%ENDTAB%'])
 
+    write_to_file(abs_output_path+'.sn.txt', handover_of_work(dataframe), mode=WriteModes.REPLACE)
+
+def handover_of_work(log=None):
+    hw_values = sna.apply(log, variant=sna.Variants.HANDOVER_LOG, parameters={constants.PARAMETER_CONSTANT_RESOURCE_KEY: 'user'})
+    gviz_hw_py = sna_visualizer.apply(hw_values, variant=sna_visualizer.Variants.PYVIS)
+
+    lines = ['']
+    with open(gviz_hw_py) as f:
+        lines = f.readlines()
+
+    return lines
 
 def write_to_file(abs_file_path=None, lines=None, mode=WriteModes.APPEND):
     f = open(file=abs_file_path, mode=mode, encoding="utf-8")
