@@ -150,7 +150,7 @@ def process_app(app=None, fulldataframe=None, abs_output_path=None):
 
     write_to_file(abs_output_path, [
         '%TAB{"Workflow"}%',
-        '<img style="max-width:70vw;" src="/pub/Main/PmDashboard/WorkflowAppOverview.png" />',
+        '<div class="prom-large-asset"><img style="max-width:70vw;cursor:pointer;" src="/pub/Main/PmDashboard/WorkflowAppOverview.png" /></div>',
         '%ENDTAB%',
     ])
 
@@ -182,7 +182,7 @@ def process_app(app=None, fulldataframe=None, abs_output_path=None):
                                                         dataframe=dataframe)
                 write_to_file(abs_output_path, [
                     '%TAB{"'+miner_type+' ('+variant+')"}%',
-                    '<img src="data:image/png;base64,'+gviz_base64+'" />',
+                    '<div class="prom-large-asset"><img class="prom-large-asset" style="max-width:70vw;cursor:pointer;" src="data:image/png;base64,'+gviz_base64+'" /></div>',
                     '%ENDTAB%'])
 
     write_to_file(abs_output_path, [
