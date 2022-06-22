@@ -136,8 +136,8 @@ def process_app(app=None, fulldataframe=None, abs_output_path=None):
     write_to_file(abs_output_path, [
         '%TAB{"App Metrics" encode="none"}%',
         '<p>[['+app_metrics+']['+app_metrics+']]</p>',
-        '<div style="width:1200px;height:720px;overflow:hidden;position:relative;">' +
-        '<iframe scrolling="no" style="position:absolute;border:0;width:1445px;left:-224px;top:-140px;height:850px;" src="/'+app_metrics+'"></iframe>' +
+        '<div style="width:1200px;height:660px;overflow:hidden;position:relative;">' +
+        '<iframe scrolling="no" style="position:absolute;border:0;width:1445px;left:-224px;top:-140px;height:800px;" src="/'+app_metrics+'"></iframe>' +
         '</div>',
         '%ENDTAB%',
         ])
