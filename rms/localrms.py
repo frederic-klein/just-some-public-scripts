@@ -90,4 +90,4 @@ ssl_context.load_cert_chain(certfile=pem_path, keyfile=key_path)
 httpd.socket = ssl_context.wrap_socket(httpd.socket, server_side=True)
 
 print(f"Serving HTTPS on port {port}...")
-httpd.serve_fo
+httpd.serve_forever()
