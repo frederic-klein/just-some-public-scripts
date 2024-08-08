@@ -68,24 +68,32 @@ def trust_certificate(pem_path, crt_path):
     subprocess.run(["sudo", "update-ca-certificates"], check=True)
 
 
-pem_path = "/usr/local/share/ca-certificates/local_rms.pem"
-crt_path = "/usr/local/share/ca-certificates/local_rms.crt"
-key_path = "/tmp/server_key.pem"
-json_config_path = "/tmp/config.json"
+def cleanup(file_path):
+    if os.path.exists(file_path):
+        subprocess.run(["rm", file_path], check=True)
 
-if not os.path.exists(crt_path):
-    generate_certificate(pem_path, key_path)
-    trust_certificate(pem_path, crt_path)
 
-if not os.path.exists(json_config_path):
-    generate_default_json(json_config_path)
+file_paths = {
+    "pem": "/usr/local/share/ca-certificates/local_rms.pem",
+    "crt": "/usr/local/share/ca-certificates/local_rms.crt",
+    "key": "/tmp/server_key.pem",
+    "json_config": "/tmp/config.json",
+    "certs": "/etc/ssl/certs/local_rms.pem",
+}
 
-port = 443
+for file_path in file_paths.values():
+    cleanup(file_path)
+
+generate_certificate(file_paths["pem"], file_paths["key"])
+trust_certificate(file_paths["pem"], file_paths["crt"])
+generate_default_json(file_paths["json_config"])
+
+port = 4433
 server_address = ("localhost", port)
 httpd = http.server.HTTPServer(server_address, CustomHTTPRequestHandler)
 
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-ssl_context.load_cert_chain(certfile=pem_path, keyfile=key_path)
+ssl_context.load_cert_chain(certfile=file_paths["pem"], keyfile=file_paths["key"])
 
 httpd.socket = ssl_context.wrap_socket(httpd.socket, server_side=True)
 
